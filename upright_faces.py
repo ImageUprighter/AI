@@ -1,4 +1,6 @@
+# from datetime import datetime
 import os
+import sys
 import cv2
 import numpy as np
 from PIL import Image
@@ -82,15 +84,25 @@ def process_image(image_path, output_path, face_app):
     print(f"Saved upright image: {output_path} (rotated {angle}°)")
 
 
-if __name__ == "__main__":
-    input_folder = "images/input"
-    output_folder = "images/output"
+def rotate_faces_in_folder(input_folder, output_folder):
+    # Create new output folder
+    # timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    # output_folder = os.path.join("images", f"/rotated_{timestamp}")
+    os.makedirs(output_folder, exist_ok=True)
 
     face_app = FaceAnalysis(name="buffalo_l", providers=["CPUExecutionProvider"])
     face_app.prepare(ctx_id=0, det_size=(640, 640))
-
     for fname in os.listdir(input_folder):
-        if fname.lower().endswith((".jpg", ".jpeg", ".png")):
-            input_path = os.path.join(input_folder, fname)
-            output_path = os.path.join(output_folder, fname)
-            process_image(input_path, output_path, face_app)
+        if fname.lower().endswith(('.jpg', '.jpeg', '.png')):
+            in_path = os.path.join(input_folder, fname)
+            out_path = os.path.join(output_folder, fname)
+            process_image(in_path, out_path, face_app)  # assuming you already have this function
+
+    return output_folder
+
+
+if __name__ == "__main__":
+    input_folder = sys.argv[1]
+    output_folder = sys.argv[2]
+    print("Rotating faces in:", input_folder)
+    rotate_faces_in_folder(input_folder, output_folder)
