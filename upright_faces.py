@@ -1,11 +1,10 @@
-# from datetime import datetime
 import os
 import sys
 import cv2
 import numpy as np
 from PIL import Image
 from insightface.app import FaceAnalysis
-
+from generate_final_images import compose_blurred_image
 
 def imread_unicode(path):
     """Reads an image with Unicode file path using PIL and converts to BGR"""
@@ -60,7 +59,7 @@ def rotate_image(img, angle):
         return img
 
 
-def process_image(image_path, output_path, face_app):
+def process_image(image_path, output_path, face_app, size):
     img = imread_unicode(image_path)
     if img is None:
         print(f"Skipping unreadable image: {image_path}")
@@ -77,26 +76,30 @@ def process_image(image_path, output_path, face_app):
     landmarks = face.kps
     angle = get_rotation_angle(landmarks)
     rotated_img = rotate_image(img, angle)
+    
+    if size:
+        # Create the blurred background composite
+        composite_image = compose_blurred_image(rotated_img, size)
+        composite_image.save(output_path)
+        print(f"Saved composite image: {output_path} (rotated {angle}°)")
+    else:
+        # Save the rotated image normally
+        Image.fromarray(cv2.cvtColor(rotated_img, cv2.COLOR_BGR2RGB)).save(output_path)
+        print(f"Saved upright image: {output_path} (rotated {angle}°)")
 
-    # Save to output folder
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    Image.fromarray(cv2.cvtColor(rotated_img, cv2.COLOR_BGR2RGB)).save(output_path)
-    print(f"Saved upright image: {output_path} (rotated {angle}°)")
 
-
-def rotate_faces_in_folder(input_folder, output_folder):
+def rotate_faces_in_folder(input_folder, output_folder, size=None):
     # Create new output folder
-    # timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    # output_folder = os.path.join("images", f"/rotated_{timestamp}")
     os.makedirs(output_folder, exist_ok=True)
 
     face_app = FaceAnalysis(name="buffalo_l", providers=["CPUExecutionProvider"])
     face_app.prepare(ctx_id=0, det_size=(640, 640))
+    
     for fname in os.listdir(input_folder):
         if fname.lower().endswith(('.jpg', '.jpeg', '.png')):
             in_path = os.path.join(input_folder, fname)
             out_path = os.path.join(output_folder, fname)
-            process_image(in_path, out_path, face_app)  # assuming you already have this function
+            process_image(in_path, out_path, face_app, size)
 
     return output_folder
 
@@ -104,5 +107,11 @@ def rotate_faces_in_folder(input_folder, output_folder):
 if __name__ == "__main__":
     input_folder = sys.argv[1]
     output_folder = sys.argv[2]
+        
     print("Rotating faces in:", input_folder)
-    rotate_faces_in_folder(input_folder, output_folder)
+    
+    if len(sys.argv) >= 4:
+        print("Creating composite images with blurred backgrounds")
+        rotate_faces_in_folder(input_folder, output_folder, (int(sys.argv[3]), int(sys.argv[4])))
+    else:
+        rotate_faces_in_folder(input_folder, output_folder)
