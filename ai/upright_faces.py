@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 from PIL import Image
 from insightface.app import FaceAnalysis
-from generate_final_images import compose_blurred_image
+from .generate_final_images import compose_blurred_image
 
 def imread_unicode(path):
     """Reads an image with Unicode file path using PIL and converts to BGR"""
